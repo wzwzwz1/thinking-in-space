@@ -417,9 +417,13 @@ def cli_evaluate_single(args: Union[argparse.Namespace, None] = None) -> None:
 
     if os.environ.get("LMMS_EVAL_PLUGINS", None):
         for plugin in os.environ["LMMS_EVAL_PLUGINS"].split(","):
-            package_tasks_location = importlib.util.find_spec(f"{plugin}.tasks").submodule_search_locations[0]
-            eval_logger.info(f"Including path: {args.include_path}")
-            include_path(package_tasks_location)
+            spec = importlib.util.find_spec(f"{plugin}.tasks")
+            if spec is None or spec.submodule_search_locations is None:
+                eval_logger.warning(f"Plugin tasks package not found for {plugin}, skipping task include.")
+                continue
+
+            package_tasks_location = spec.submodule_search_locations[0]
+            eval_logger.info(f"Plugin task path detected: {package_tasks_location}")
 
     if args.tasks is None:
         eval_logger.error("Need to specify task to evaluate.")

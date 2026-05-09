@@ -51,6 +51,8 @@ def get_model(model_name):
         raise ValueError(f"Model {model_name} not found in available models.")
 
     model_class = AVAILABLE_MODELS[model_name]
+    if model_class in globals():
+        return globals()[model_class]
     try:
         module = __import__(f"lmms_eval.models.{model_name}", fromlist=[model_class])
         return getattr(module, model_class)
@@ -66,5 +68,7 @@ if os.environ.get("LMMS_EVAL_PLUGINS", None):
         for model_name, model_class in getattr(m, "AVAILABLE_MODELS").items():
             try:
                 exec(f"from {plugin}.models.{model_name} import {model_class}")
-            except ImportError as e:
-                logger.debug(f"Failed to import {model_class} from {model_name}: {e}")
+                AVAILABLE_MODELS[model_name] = model_class
+                logger.warning(f"Registered plugin model: {model_name} -> {plugin}.models.{model_name}.{model_class}")
+            except Exception as e:
+                logger.warning(f"Failed to import plugin model {model_name} ({model_class}) from {plugin}: {e}")
